@@ -21,6 +21,12 @@ pub struct GameState {
     pub win_condition: WinCondition,
 }
 
+impl Default for GameState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GameState {
     pub fn new() -> Self {
         Self {

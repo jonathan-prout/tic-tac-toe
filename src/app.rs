@@ -48,6 +48,7 @@ impl Hooks for App {
         AppRoutes::with_default_routes()
             .add_route(controllers::game::routes())
             .add_route(controllers::websocket::routes())
+            .add_route(controllers::static_files::routes())
     }
 
     fn connect_workers<'a>(_p: &'a mut Processor, _ctx: &'a AppContext) {

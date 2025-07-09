@@ -9,8 +9,7 @@ server:
   middlewares:
     cors:
       enable: true
-      allow_origins:
-        - "*"
+      allow_origins: [any]
       allow_headers:
         - "*"
       allow_methods:
@@ -19,8 +18,8 @@ server:
 database:
   min_connections: 1
   max_connections: 1
-  connect_timeout: 1
-  idle_timeout: 100
+  connect_timeout: 30
+  idle_timeout: 3600
   uri: "sqlite://db.sqlite?mode=rwc"
   enable_logging: false
   auto_migrate: true
