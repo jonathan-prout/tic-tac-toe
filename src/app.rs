@@ -1,16 +1,27 @@
-use std::sync::Arc;
+use lazy_static::lazy_static;
+use loco_rs::app::Hooks;
+use loco_rs::boot::create_app;
+use loco_rs::boot::BootResult;
+use loco_rs::boot::StartMode;
+use loco_rs::controller::AppRoutes;
+use loco_rs::environment::Environment;
 use loco_rs::prelude::*;
-use axum::Router;
-use tower_http::services::ServeDir;
+use loco_rs::task::Tasks;
+use loco_rs::worker::Processor;
+use sea_orm::DatabaseConnection;
+use std::path::Path;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::{
-    controllers,
-    game::GameState,
-    websocket::WebSocketManager,
-};
+use crate::{controllers, game::GameState, websocket::WebSocketManager};
 
 pub struct App;
+
+// Global state that we want to share - make them public
+lazy_static! {
+    pub static ref GAME_STATE: Arc<RwLock<GameState>> = Arc::new(RwLock::new(GameState::new()));
+    pub static ref WS_MANAGER: Arc<WebSocketManager> = Arc::new(WebSocketManager::new());
+}
 
 #[async_trait::async_trait]
 impl Hooks for App {
@@ -29,19 +40,8 @@ impl Hooks for App {
     }
 
     async fn boot(mode: StartMode, environment: &Environment) -> Result<BootResult> {
-        // Initialize game state
-        let game_state = Arc::new(RwLock::new(GameState::new()));
-        let ws_manager = Arc::new(WebSocketManager::new());
-
-        Ok(BootResult {
-            router: Some(Router::new()
-                .nest_service("/static", ServeDir::new("static"))
-                .with_state(AppContext {
-                    game_state,
-                    ws_manager,
-                })),
-            ..Default::default()
-        })
+        // Use the with-migrator boot method with empty migrator
+        create_app::<Self, migration::Migrator>(mode, environment).await
     }
 
     fn routes(_ctx: &AppContext) -> AppRoutes {
@@ -50,23 +50,21 @@ impl Hooks for App {
             .add_route(controllers::websocket::routes())
     }
 
-    async fn connect_workers(ctx: &AppContext, queue: &Queue) -> Result<()> {
-        // No background workers needed for this demo
+    fn connect_workers<'a>(_p: &'a mut Processor, _ctx: &'a AppContext) {
+        // No workers needed for this demo
+    }
+
+    fn register_tasks(_tasks: &mut Tasks) {
+        // No tasks needed for this demo
+    }
+
+    async fn truncate(_db: &DatabaseConnection) -> Result<()> {
+        // No tables to truncate for in-memory game
         Ok(())
     }
-}
 
-#[derive(Clone)]
-pub struct AppContext {
-    pub game_state: Arc<RwLock<GameState>>,
-    pub ws_manager: Arc<WebSocketManager>,
-}
-
-impl Default for AppContext {
-    fn default() -> Self {
-        Self {
-            game_state: Arc::new(RwLock::new(GameState::new())),
-            ws_manager: Arc::new(WebSocketManager::new()),
-        }
+    async fn seed(_db: &DatabaseConnection, _base: &Path) -> Result<()> {
+        // No seeding needed for in-memory game
+        Ok(())
     }
 }
