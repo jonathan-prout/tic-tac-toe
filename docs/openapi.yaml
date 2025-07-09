@@ -1,0 +1,153 @@
+openapi: 3.0.3
+info:
+  title: Tic Tac Toe API
+  description: REST API for Tic Tac Toe game with WebSocket real-time updates
+  version: 1.0.0
+servers:
+  - url: http://localhost:5150
+    description: Development server
+
+paths:
+  /api/tiles:
+    get:
+      summary: Get current tile grid
+      description: Returns the current 3x3 grid of tile states
+      responses:
+        '200':
+          description: Current tile grid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TileGrid'
+              example:
+                tiles:
+                  - ["Empty", "X", "O"]
+                  - ["X", "Empty", "X"]
+                  - ["O", "X", "Empty"]
+
+  /api/state:
+    get:
+      summary: Get current game state
+      description: Returns the current win condition of the game
+      responses:
+        '200':
+          description: Current game state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameState'
+              example:
+                condition: "NoWin"
+
+  /api/tile/{x}/{y}:
+    post:
+      summary: Make a move
+      description: Attempt to place X or O at the specified coordinates
+      parameters:
+        - name: x
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 2
+          description: X coordinate (0-2)
+        - name: y
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 2
+          description: Y coordinate (0-2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveRequest'
+            example:
+              state: "X"
+      responses:
+        '200':
+          description: Move successful
+        '409':
+          description: Tile already occupied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Tile already occupied"
+        '400':
+          description: Invalid coordinates or request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Invalid coordinates"
+
+  /api/reset:
+    post:
+      summary: Reset game
+      description: Clear the game board and reset win condition
+      responses:
+        '200':
+          description: Game reset successful
+
+  /ws:
+    get:
+      summary: WebSocket endpoint for real-time updates
+      description: Connect to receive real-time updates about tile changes and game state
+      responses:
+        '101':
+          description: Switching protocols to WebSocket
+
+components:
+  schemas:
+    TileState:
+      type: string
+      enum: ["Empty", "X", "O"]
+      description: State of a tile in the game grid
+
+    WinCondition:
+      type: string
+      enum: ["NoWin", "XWin", "OWin", "Stalemate"]
+      description: Current win condition of the game
+
+    TileGrid:
+      type: object
+      properties:
+        tiles:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/TileState'
+            minItems: 3
+            maxItems: 3
+          minItems: 3
+          maxItems: 3
+          description: 3x3 grid of tile states
+
+    GameState:
+      type: object
+      properties:
+        condition:
+          $ref: '#/components/schemas/WinCondition'
+
+    MoveRequest:
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          $ref: '#/components/schemas/TileState'
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message

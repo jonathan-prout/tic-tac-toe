@@ -1,0 +1,47 @@
+FROM rust:1.75 AS builder
+
+WORKDIR /app
+
+# Copy dependency files
+COPY Cargo.toml Cargo.lock ./
+COPY migration ./migration
+
+# Create a dummy src/main.rs to cache dependencies
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+
+# Build dependencies
+RUN cargo build --release
+RUN rm src/main.rs
+
+# Copy source code
+COPY src ./src
+
+# Build the application
+RUN touch src/main.rs && cargo build --release
+
+# Runtime stage
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y \
+        ca-certificates \
+        libssl3 \
+        && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy the binary
+COPY --from=builder /app/target/release/tictactoe-server .
+
+# Copy static files
+COPY static ./static
+
+# Copy configuration
+COPY config ./config
+
+# Expose port
+EXPOSE 5150
+
+# Run the application
+CMD ["./tictactoe-server", "start"]

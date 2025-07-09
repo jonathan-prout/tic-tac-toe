@@ -1,0 +1,41 @@
+logger:
+  enable: true
+  level: debug
+  format: compact
+  override_filter: tictactoe_server=debug,tower_http=debug,axum::rejection=trace
+
+server:
+  port: 5150
+  host: 0.0.0.0
+  middlewares:
+    cors:
+      enable: true
+      allow_origins:
+        - "*"
+      allow_headers:
+        - "*"
+      allow_methods:
+        - "*"
+    static:
+      enable: true
+      must_exist: true
+      folder:
+        uri: "/"
+        path: "static"
+        fallback: "index.html"
+
+database:
+  uri: "sqlite://db.sqlite?mode=rwc"
+  enable_logging: false
+  auto_migrate: true
+  dangerously_truncate: false
+  dangerously_recreate: false
+
+queue:
+  kind: Redis
+  uri: "redis://127.0.0.1:6379"
+  dangerously_flush: false
+
+mailer:
+  smtp:
+    enable: false

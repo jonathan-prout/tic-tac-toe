@@ -1,0 +1,217 @@
+asyncapi: 3.0.0
+info:
+  title: Tic Tac Toe WebSocket API
+  version: 1.0.0
+  description: |
+    WebSocket API for real-time Tic Tac Toe game updates.
+    
+    This API provides real-time notifications for:
+    - Tile state changes when players make moves
+    - Game state changes when win conditions are met
+    - Game resets
+    
+    The WebSocket uses topic-based messaging where clients can subscribe to specific topics
+    to receive targeted updates about game events.
+  contact:
+    name: Tic Tac Toe API Support
+    url: https://example.com/support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  development:
+    host: localhost:5150
+    protocol: ws
+    description: Development WebSocket server
+
+channels:
+  game.tile.{x}.{y}:
+    description: |
+      Tile-specific updates for coordinate (x,y).
+      Clients receive notifications when a tile state changes.
+    parameters:
+      x:
+        description: X coordinate of the tile (0-2)
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2
+        examples:
+          - "0"
+          - "1"
+          - "2"
+      y:
+        description: Y coordinate of the tile (0-2)
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2
+        examples:
+          - "0"
+          - "1"
+          - "2"
+    messages:
+      tileUpdate:
+        $ref: '#/components/messages/TileUpdate'
+
+  game.state:
+    description: |
+      Game state updates.
+      Clients receive notifications when the win condition changes.
+    messages:
+      stateUpdate:
+        $ref: '#/components/messages/StateUpdate'
+
+operations:
+  receiveTileUpdate:
+    action: receive
+    channel:
+      $ref: '#/channels/game.tile.{x}.{y}'
+    summary: Receive tile state updates
+    description: |
+      Receive notifications when a tile state changes.
+      This happens when a player makes a move or when the game is reset.
+    messages:
+      - $ref: '#/components/messages/TileUpdate'
+
+  receiveStateUpdate:
+    action: receive
+    channel:
+      $ref: '#/channels/game.state'
+    summary: Receive game state updates
+    description: |
+      Receive notifications when the game state changes.
+      This happens when someone wins, the game ends in a stalemate, or the game is reset.
+    messages:
+      - $ref: '#/components/messages/StateUpdate'
+
+components:
+  messages:
+    TileUpdate:
+      name: TileUpdate
+      title: Tile State Update
+      summary: Notification of tile state change
+      description: |
+        Sent when a tile state changes (player move or reset).
+        The topic indicates which tile changed: game.tile.{x}.{y}
+      payload:
+        $ref: '#/components/schemas/TileUpdatePayload'
+      examples:
+        - name: PlayerMove
+          summary: Player places X on tile (1,1)
+          payload:
+            state: "X"
+        - name: Reset
+          summary: Tile cleared during game reset
+          payload:
+            state: "Empty"
+
+    StateUpdate:
+      name: StateUpdate
+      title: Game State Update
+      summary: Notification of game state change
+      description: |
+        Sent when the game state changes (win, stalemate, or reset).
+        The topic is always: game.state
+      payload:
+        $ref: '#/components/schemas/StateUpdatePayload'
+      examples:
+        - name: XWins
+          summary: Player X wins the game
+          payload:
+            condition: "XWin"
+        - name: Stalemate
+          summary: Game ends in a tie
+          payload:
+            condition: "Stalemate"
+        - name: Reset
+          summary: Game is reset
+          payload:
+            condition: "NoWin"
+
+  schemas:
+    TileUpdatePayload:
+      type: object
+      description: Payload for tile state updates
+      properties:
+        state:
+          type: string
+          enum: ["Empty", "X", "O"]
+          description: |
+            New state of the tile:
+            - Empty: Tile is cleared (usually after reset)
+            - X: Player X placed a mark
+            - O: Player O placed a mark
+      required:
+        - state
+      examples:
+        - state: "X"
+        - state: "O"
+        - state: "Empty"
+
+    StateUpdatePayload:
+      type: object
+      description: Payload for game state updates
+      properties:
+        condition:
+          type: string
+          enum: ["NoWin", "XWin", "OWin", "Stalemate"]
+          description: |
+            Current win condition:
+            - NoWin: Game is in progress
+            - XWin: Player X has won
+            - OWin: Player O has won
+            - Stalemate: Game ended in a tie
+      required:
+        - condition
+      examples:
+        - condition: "NoWin"
+        - condition: "XWin"
+        - condition: "OWin"
+        - condition: "Stalemate"
+
+    WebSocketMessage:
+      type: object
+      description: Standard WebSocket message format
+      properties:
+        topic:
+          type: string
+          description: |
+            Topic name indicating the type and context of the message.
+            Examples:
+            - game.tile.0.0 (tile at position 0,0)
+            - game.tile.1.2 (tile at position 1,2)
+            - game.state (game state change)
+          examples:
+            - "game.tile.0.0"
+            - "game.tile.1.2"
+            - "game.state"
+        payload:
+          oneOf:
+            - $ref: '#/components/schemas/TileUpdatePayload'
+            - $ref: '#/components/schemas/StateUpdatePayload'
+          description: Message payload, type depends on topic
+      required:
+        - topic
+        - payload
+      examples:
+        - topic: "game.tile.1.1"
+          payload:
+            state: "X"
+        - topic: "game.state"
+          payload:
+            condition: "XWin"
+
+  messageTraits:
+    commonHeaders:
+      headers:
+        type: object
+        properties:
+          timestamp:
+            type: string
+            format: date-time
+            description: Timestamp when the message was sent
+          messageId:
+            type: string
+            description: Unique identifier for the message

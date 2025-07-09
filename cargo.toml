@@ -1,0 +1,28 @@
+[package]
+name = "tictactoe-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+loco-rs = { version = "0.2", features = ["with-db", "bg"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+tokio-tungstenite = "0.20"
+futures-util = "0.3"
+axum = { version = "0.7", features = ["ws"] }
+tower = "0.4"
+tower-http = { version = "0.4", features = ["cors", "fs"] }
+uuid = { version = "1.0", features = ["v4"] }
+tracing = "0.1"
+async-trait = "0.1"
+sea-orm = { version = "0.12", features = ["sqlx-sqlite", "runtime-tokio-rustls", "macros"] }
+utoipa = { version = "4.0", features = ["axum_extras"] }
+migration = { path = "migration" }
+
+[dependencies.sea-orm-migration]
+version = "0.12"
+features = [
+  "sqlx-sqlite",
+  "runtime-tokio-rustls",
+]
