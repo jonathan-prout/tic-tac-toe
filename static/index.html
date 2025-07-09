@@ -1,412 +1,435 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac Toe - REST + WebSocket Demo</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-        }
-        .player-selection {
-            text-align: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-        }
-        .player-selection label {
-            margin: 0 15px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .player-selection input[type="radio"] {
-            margin-right: 5px;
-        }
-        .game-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            max-width: 300px;
-            margin: 20px auto;
-            aspect-ratio: 1;
-        }
-        .tile {
-            background-color: #e9ecef;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            font-size: 2rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 80px;
-        }
-        .tile:hover:not(.occupied) {
-            background-color: #d1ecf1;
-            border-color: #bee5eb;
-        }
-        .tile.occupied {
-            cursor: not-allowed;
-            background-color: #f8f9fa;
-        }
-        .tile.x {
-            color: #dc3545;
-        }
-        .tile.o {
-            color: #007bff;
-        }
-        .game-status {
-            text-align: center;
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 5px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .status-no-win {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .status-win {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .status-stalemate {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        .controls {
-            text-align: center;
-            margin: 20px 0;
-        }
-        .reset-button {
-            background-color: #6c757d;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.2s ease;
-        }
-        .reset-button:hover {
-            background-color: #5a6268;
-        }
-        .connection-status {
-            text-align: center;
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        .connected {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .disconnected {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .loading {
-            text-align: center;
-            color: #6c757d;
-            margin: 20px 0;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Tic Tac Toe</h1>
-        <div class="subtitle">REST API + WebSocket Demo</div>
-        
-        <div class="connection-status" id="connectionStatus">
-            <span id="connectionText">Connecting...</span>
-        </div>
-        
-        <div class="player-selection">
-            <label>
-                <input type="radio" name="player" value="X" checked>
-                Play as X
-            </label>
-            <label>
-                <input type="radio" name="player" value="O">
-                Play as O
-            </label>
-        </div>
-        
-        <div class="game-status" id="gameStatus">
-            <div id="statusText">Loading...</div>
-        </div>
-        
-        <div class="game-grid" id="gameGrid">
-            <!-- Grid will be populated by JavaScript -->
-        </div>
-        
-        <div class="controls">
-            <button class="reset-button" id="resetButton">Reset Game</button>
-        </div>
-    </div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tic Tac Toe - REST + WebSocket Demo</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .container {
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            h1 {
+                text-align: center;
+                color: #333;
+                margin-bottom: 30px;
+            }
+            .player-selection {
+                text-align: center;
+                margin-bottom: 20px;
+                padding: 15px;
+                background-color: #f8f9fa;
+                border-radius: 5px;
+            }
+            .player-selection label {
+                margin: 0 15px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            .player-selection input[type="radio"] {
+                margin-right: 5px;
+            }
+            .game-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 5px;
+                max-width: 300px;
+                margin: 20px auto;
+                aspect-ratio: 1;
+            }
+            .tile {
+                background-color: #e9ecef;
+                border: 2px solid #dee2e6;
+                border-radius: 8px;
+                font-size: 2rem;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 80px;
+            }
+            .tile:hover:not(.occupied) {
+                background-color: #d1ecf1;
+                border-color: #bee5eb;
+            }
+            .tile.occupied {
+                cursor: not-allowed;
+                background-color: #f8f9fa;
+            }
+            .tile.x {
+                color: #dc3545;
+            }
+            .tile.o {
+                color: #007bff;
+            }
+            .game-status {
+                text-align: center;
+                margin: 20px 0;
+                padding: 15px;
+                border-radius: 5px;
+                font-size: 18px;
+                font-weight: bold;
+            }
+            .status-no-win {
+                background-color: #d4edda;
+                color: #155724;
+            }
+            .status-win {
+                background-color: #f8d7da;
+                color: #721c24;
+            }
+            .status-stalemate {
+                background-color: #fff3cd;
+                color: #856404;
+            }
+            .controls {
+                text-align: center;
+                margin: 20px 0;
+            }
+            .reset-button {
+                background-color: #6c757d;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+                transition: background-color 0.2s ease;
+            }
+            .reset-button:hover {
+                background-color: #5a6268;
+            }
+            .connection-status {
+                text-align: center;
+                margin: 10px 0;
+                padding: 10px;
+                border-radius: 5px;
+                font-size: 14px;
+            }
+            .connected {
+                background-color: #d4edda;
+                color: #155724;
+            }
+            .disconnected {
+                background-color: #f8d7da;
+                color: #721c24;
+            }
+            .loading {
+                text-align: center;
+                color: #6c757d;
+                margin: 20px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Tic Tac Toe</h1>
+            <div class="subtitle">REST API + WebSocket Demo</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/autobahn@21.2.1/dist/autobahn.min.js"></script>
-    <script>
-        class TicTacToeGame {
-            constructor() {
-                this.ws = null;
-                this.gameState = {
-                    tiles: Array(3).fill().map(() => Array(3).fill('Empty')),
-                    condition: 'NoWin'
-                };
-                this.connected = false;
-                
-                this.initializeDOM();
-                this.setupEventListeners();
-                this.connectWebSocket();
-                this.loadInitialState();
-            }
-            
-            initializeDOM() {
-                this.gameGrid = document.getElementById('gameGrid');
-                this.gameStatus = document.getElementById('gameStatus');
-                this.statusText = document.getElementById('statusText');
-                this.resetButton = document.getElementById('resetButton');
-                this.connectionStatus = document.getElementById('connectionStatus');
-                this.connectionText = document.getElementById('connectionText');
-                
-                this.createGrid();
-            }
-            
-            createGrid() {
-                this.gameGrid.innerHTML = '';
-                for (let x = 0; x < 3; x++) {
-                    for (let y = 0; y < 3; y++) {
-                        const tile = document.createElement('div');
-                        tile.className = 'tile';
-                        tile.id = `tile_${x}_${y}`;
-                        tile.dataset.x = x;
-                        tile.dataset.y = y;
-                        tile.addEventListener('click', this.handleTileClick.bind(this));
-                        this.gameGrid.appendChild(tile);
-                    }
-                }
-            }
-            
-            setupEventListeners() {
-                this.resetButton.addEventListener('click', this.resetGame.bind(this));
-            }
-            
-            connectWebSocket() {
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${protocol}//${window.location.host}/ws`;
-                
-                this.ws = new WebSocket(wsUrl);
-                
-                this.ws.onopen = () => {
-                    this.connected = true;
-                    this.updateConnectionStatus();
-                    console.log('WebSocket connected');
-                };
-                
-                this.ws.onmessage = (event) => {
-                    try {
-                        const message = JSON.parse(event.data);
-                        this.handleWebSocketMessage(message);
-                    } catch (e) {
-                        console.error('Failed to parse WebSocket message:', e);
-                    }
-                };
-                
-                this.ws.onclose = () => {
+            <div class="connection-status" id="connectionStatus">
+                <span id="connectionText">Connecting...</span>
+            </div>
+
+            <div class="player-selection">
+                <label>
+                    <input type="radio" name="player" value="X" checked />
+                    Play as X
+                </label>
+                <label>
+                    <input type="radio" name="player" value="O" />
+                    Play as O
+                </label>
+            </div>
+
+            <div class="game-status" id="gameStatus">
+                <div id="statusText">Loading...</div>
+            </div>
+
+            <div class="game-grid" id="gameGrid">
+                <!-- Grid will be populated by JavaScript -->
+            </div>
+
+            <div class="controls">
+                <button class="reset-button" id="resetButton">
+                    Reset Game
+                </button>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/autobahn@21.2.1/dist/autobahn.min.js"></script>
+        <script>
+            class TicTacToeGame {
+                constructor() {
+                    this.ws = null;
+                    this.gameState = {
+                        tiles: Array(3)
+                            .fill()
+                            .map(() => Array(3).fill("Empty")),
+                        condition: "NoWin",
+                    };
                     this.connected = false;
-                    this.updateConnectionStatus();
-                    console.log('WebSocket disconnected');
-                    
-                    // Reconnect after 3 seconds
-                    setTimeout(() => {
-                        this.connectWebSocket();
-                    }, 3000);
-                };
-                
-                this.ws.onerror = (error) => {
-                    console.error('WebSocket error:', error);
-                };
-            }
-            
-            handleWebSocketMessage(message) {
-                const { topic, payload } = message;
-                
-                if (topic.startsWith('game.tile.')) {
-                    const [, , , x, y] = topic.split('.');
-                    this.updateTile(parseInt(x), parseInt(y), payload.state);
-                } else if (topic === 'game.state') {
-                    this.updateGameState(payload.condition);
+
+                    this.initializeDOM();
+                    this.setupEventListeners();
+                    this.connectWebSocket();
+                    this.loadInitialState();
                 }
-            }
-            
-            updateTile(x, y, state) {
-                const tile = document.getElementById(`tile_${x}_${y}`);
-                if (tile) {
-                    tile.textContent = state === 'Empty' ? '' : state;
-                    tile.className = 'tile';
-                    
-                    if (state !== 'Empty') {
-                        tile.classList.add('occupied');
-                        tile.classList.add(state.toLowerCase());
-                    }
+
+                initializeDOM() {
+                    this.gameGrid = document.getElementById("gameGrid");
+                    this.gameStatus = document.getElementById("gameStatus");
+                    this.statusText = document.getElementById("statusText");
+                    this.resetButton = document.getElementById("resetButton");
+                    this.connectionStatus =
+                        document.getElementById("connectionStatus");
+                    this.connectionText =
+                        document.getElementById("connectionText");
+
+                    this.createGrid();
                 }
-                
-                this.gameState.tiles[x][y] = state;
-            }
-            
-            updateGameState(condition) {
-                this.gameState.condition = condition;
-                this.updateStatusDisplay();
-            }
-            
-            updateStatusDisplay() {
-                const { condition } = this.gameState;
-                let statusClass = 'status-no-win';
-                let statusText = 'Game in progress';
-                
-                switch (condition) {
-                    case 'XWin':
-                        statusClass = 'status-win';
-                        statusText = '🎉 X Wins!';
-                        break;
-                    case 'OWin':
-                        statusClass = 'status-win';
-                        statusText = '🎉 O Wins!';
-                        break;
-                    case 'Stalemate':
-                        statusClass = 'status-stalemate';
-                        statusText = '🤝 It\'s a tie!';
-                        break;
-                    case 'NoWin':
-                        statusClass = 'status-no-win';
-                        statusText = 'Game in progress';
-                        break;
-                }
-                
-                this.gameStatus.className = `game-status ${statusClass}`;
-                this.statusText.textContent = statusText;
-            }
-            
-            updateConnectionStatus() {
-                if (this.connected) {
-                    this.connectionStatus.className = 'connection-status connected';
-                    this.connectionText.textContent = '🟢 Connected';
-                } else {
-                    this.connectionStatus.className = 'connection-status disconnected';
-                    this.connectionText.textContent = '🔴 Disconnected - Reconnecting...';
-                }
-            }
-            
-            async loadInitialState() {
-                try {
-                    // Load tiles
-                    const tilesResponse = await fetch('/api/tiles');
-                    const tilesData = await tilesResponse.json();
-                    
-                    // Load game state
-                    const stateResponse = await fetch('/api/state');
-                    const stateData = await stateResponse.json();
-                    
-                    // Update UI
+
+                createGrid() {
+                    this.gameGrid.innerHTML = "";
                     for (let x = 0; x < 3; x++) {
                         for (let y = 0; y < 3; y++) {
-                            this.updateTile(x, y, tilesData.tiles[x][y]);
+                            const tile = document.createElement("div");
+                            tile.className = "tile";
+                            tile.id = `tile_${x}_${y}`;
+                            tile.dataset.x = x;
+                            tile.dataset.y = y;
+                            tile.addEventListener(
+                                "click",
+                                this.handleTileClick.bind(this),
+                            );
+                            this.gameGrid.appendChild(tile);
                         }
                     }
-                    
-                    this.updateGameState(stateData.condition);
-                    
-                } catch (error) {
-                    console.error('Failed to load initial state:', error);
-                    this.statusText.textContent = 'Failed to load game state';
                 }
-            }
-            
-            async handleTileClick(event) {
-                const tile = event.target;
-                const x = parseInt(tile.dataset.x);
-                const y = parseInt(tile.dataset.y);
-                
-                // Check if tile is already occupied
-                if (this.gameState.tiles[x][y] !== 'Empty') {
-                    return;
+
+                setupEventListeners() {
+                    this.resetButton.addEventListener(
+                        "click",
+                        this.resetGame.bind(this),
+                    );
                 }
-                
-                // Check if game is finished
-                if (this.gameState.condition !== 'NoWin') {
-                    return;
+
+                connectWebSocket() {
+                    const protocol =
+                        window.location.protocol === "https:" ? "wss:" : "ws:";
+                    const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+                    this.ws = new WebSocket(wsUrl);
+
+                    this.ws.onopen = () => {
+                        this.connected = true;
+                        this.updateConnectionStatus();
+                        console.log("WebSocket connected");
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const message = JSON.parse(event.data);
+                            this.handleWebSocketMessage(message);
+                        } catch (e) {
+                            console.error(
+                                "Failed to parse WebSocket message:",
+                                e,
+                            );
+                        }
+                    };
+
+                    this.ws.onclose = () => {
+                        this.connected = false;
+                        this.updateConnectionStatus();
+                        console.log("WebSocket disconnected");
+
+                        // Reconnect after 3 seconds
+                        setTimeout(() => {
+                            this.connectWebSocket();
+                        }, 3000);
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error("WebSocket error:", error);
+                    };
                 }
-                
-                // Get selected player
-                const selectedPlayer = document.querySelector('input[name="player"]:checked').value;
-                
-                try {
-                    const response = await fetch(`/api/tile/${x}/${y}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            state: selectedPlayer
-                        })
-                    });
-                    
-                    if (response.status === 409) {
-                        const errorData = await response.json();
-                        alert(errorData.error);
-                    } else if (!response.ok) {
-                        const errorData = await response.json();
-                        alert(`Error: ${errorData.error}`);
+
+                handleWebSocketMessage(message) {
+                    const { topic, payload } = message;
+                    console.log(topic, payload);
+                    if (topic.startsWith("game.tile.")) {
+                        const [, , x, y] = topic.split(".");
+                        this.updateTile(
+                            parseInt(x),
+                            parseInt(y),
+                            payload.state,
+                        );
+                    } else if (topic === "game.state") {
+                        this.updateGameState(payload.condition);
                     }
-                    
-                } catch (error) {
-                    console.error('Failed to make move:', error);
-                    alert('Failed to make move');
                 }
-            }
-            
-            async resetGame() {
-                try {
-                    const response = await fetch('/api/reset', {
-                        method: 'POST'
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Reset failed');
+
+                updateTile(x, y, state) {
+                    const tile = document.getElementById(`tile_${x}_${y}`);
+                    if (tile) {
+                        tile.textContent = state === "Empty" ? "" : state;
+                        tile.className = "tile";
+
+                        if (state !== "Empty") {
+                            tile.classList.add("occupied");
+                            tile.classList.add(state.toLowerCase());
+                        }
                     }
-                    
-                } catch (error) {
-                    console.error('Failed to reset game:', error);
-                    alert('Failed to reset game');
+
+                    this.gameState.tiles[x][y] = state;
+                }
+
+                updateGameState(condition) {
+                    this.gameState.condition = condition;
+                    this.updateStatusDisplay();
+                }
+
+                updateStatusDisplay() {
+                    const { condition } = this.gameState;
+                    let statusClass = "status-no-win";
+                    let statusText = "Game in progress";
+
+                    switch (condition) {
+                        case "XWin":
+                            statusClass = "status-win";
+                            statusText = "🎉 X Wins!";
+                            break;
+                        case "OWin":
+                            statusClass = "status-win";
+                            statusText = "🎉 O Wins!";
+                            break;
+                        case "Stalemate":
+                            statusClass = "status-stalemate";
+                            statusText = "🤝 It's a tie!";
+                            break;
+                        case "NoWin":
+                            statusClass = "status-no-win";
+                            statusText = "Game in progress";
+                            break;
+                    }
+
+                    this.gameStatus.className = `game-status ${statusClass}`;
+                    this.statusText.textContent = statusText;
+                }
+
+                updateConnectionStatus() {
+                    if (this.connected) {
+                        this.connectionStatus.className =
+                            "connection-status connected";
+                        this.connectionText.textContent = "🟢 Connected";
+                    } else {
+                        this.connectionStatus.className =
+                            "connection-status disconnected";
+                        this.connectionText.textContent =
+                            "🔴 Disconnected - Reconnecting...";
+                    }
+                }
+
+                async loadInitialState() {
+                    try {
+                        // Load tiles
+                        const tilesResponse = await fetch("/api/tiles");
+                        const tilesData = await tilesResponse.json();
+
+                        // Load game state
+                        const stateResponse = await fetch("/api/state");
+                        const stateData = await stateResponse.json();
+
+                        // Update UI
+                        for (let x = 0; x < 3; x++) {
+                            for (let y = 0; y < 3; y++) {
+                                this.updateTile(x, y, tilesData.tiles[x][y]);
+                            }
+                        }
+
+                        this.updateGameState(stateData.condition);
+                    } catch (error) {
+                        console.error("Failed to load initial state:", error);
+                        this.statusText.textContent =
+                            "Failed to load game state";
+                    }
+                }
+
+                async handleTileClick(event) {
+                    const tile = event.target;
+                    const x = parseInt(tile.dataset.x);
+                    const y = parseInt(tile.dataset.y);
+
+                    // Check if tile is already occupied
+                    if (this.gameState.tiles[x][y] !== "Empty") {
+                        return;
+                    }
+
+                    // Check if game is finished
+                    if (this.gameState.condition !== "NoWin") {
+                        return;
+                    }
+
+                    // Get selected player
+                    const selectedPlayer = document.querySelector(
+                        'input[name="player"]:checked',
+                    ).value;
+
+                    try {
+                        const response = await fetch(`/api/tile/${x}/${y}`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                state: selectedPlayer,
+                            }),
+                        });
+
+                        if (response.status === 409) {
+                            const errorData = await response.json();
+                            alert(errorData.error);
+                        } else if (!response.ok) {
+                            const errorData = await response.json();
+                            alert(`Error: ${errorData.error}`);
+                        }
+                    } catch (error) {
+                        console.error("Failed to make move:", error);
+                        alert("Failed to make move");
+                    }
+                }
+
+                async resetGame() {
+                    try {
+                        const response = await fetch("/api/reset", {
+                            method: "POST",
+                        });
+
+                        if (!response.ok) {
+                            throw new Error("Reset failed");
+                        }
+                    } catch (error) {
+                        console.error("Failed to reset game:", error);
+                        alert("Failed to reset game");
+                    }
                 }
             }
-        }
-        
-        // Initialize the game when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new TicTacToeGame();
-        });
-    </script>
-</body>
+
+            // Initialize the game when page loads
+            document.addEventListener("DOMContentLoaded", () => {
+                new TicTacToeGame();
+            });
+        </script>
+    </body>
 </html>
